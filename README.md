@@ -3,7 +3,7 @@ emoji: 🌖
 colorFrom: yellow
 colorTo: red
 sdk: docker
-sdk_version: latest
+sdk_version: "latest"
 app_file: app.py
 pinned: false
 license: apache-2.0
