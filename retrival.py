@@ -10,6 +10,7 @@ from huggingface_hub import InferenceClient
 
 from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, self_query_prompt, metadata_field_info, chat_prompt
 from util.config import DB_STORAGE_PATH, EMBEDDING_MODEL, LLM
+from util.types import ChatRequest
 
 load_dotenv()
 
@@ -80,11 +81,13 @@ retrival = Retrival(EMBEDDING_MODEL, client,
                     collection_name="bd-constitution", attribute_info=metadata_field_info)
 
 
-def getAnswer(question: str):
-    sq_res = retrival.selfQuery(question, 10)
+def getAnswer(request: ChatRequest):
+    last_message = request.messages[-1].content
+    sq_res = retrival.selfQuery(last_message, 10)
     sq_context_text = "\n\n-----\n\n".join(
         [f"{doc}\n\n## metadata={sq_res['metadatas'][0][i]}" for i, doc in enumerate(sq_res['documents'][0])])
-    t = chat_prompt.invoke({'question': question, 'context': sq_context_text})
+    t = chat_prompt.invoke(
+        {'question': last_message, 'context': sq_context_text})
     messages = [
         {"role": "system", "content": SYSTEM_MSG},
         {"role": "user", "content": t.messages[0].content},
@@ -92,8 +95,8 @@ def getAnswer(question: str):
     stream = client.chat.completions.create(
         model=LLM,
         messages=messages,
-        temperature=0.5,
-        stream=False
+        temperature=request.temperature or 0.5,
+        stream=request.stream or False
     )
     return stream.choices[0].message.content
     # for chunk in stream:

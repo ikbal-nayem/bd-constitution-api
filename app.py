@@ -2,18 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from retrival import getAnswer
-
-
-class Message(BaseModel):
-    role: str
-    content: str
-    id: str = None
-
-
-class ChatRequest(BaseModel):
-    messages: list[Message]
-    max_tokens: int = 100
-    temperature: float = 0.5
+from util.types import ChatRequest
 
 
 app = FastAPI()
@@ -26,5 +15,5 @@ def read_root():
 
 @app.post("/chat")
 def chat_response(request: ChatRequest):
-    res = getAnswer(request.messages[-1].content)
+    res = getAnswer(request)
     return {"message": res}
