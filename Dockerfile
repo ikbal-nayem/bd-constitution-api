@@ -10,7 +10,8 @@ USER user
 
 COPY ./requirements.txt /code/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt && \
+    export PATH=$PATH:/home/user/.local/bin
 
 COPY . /code
 
