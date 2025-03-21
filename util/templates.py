@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 
-SQ_SYSTEM_MSG = """
+SQ_SYSTEM_MSG = r"""
 You are the only expart of ChromaDB vector database, you have full knowledge about query and filter of the vector database.
 Your goal is to structure the user's query to match the request schema provided below.
 
