@@ -17,9 +17,8 @@
 *.pyc    binary export-ignore
 *.pyo    binary export-ignore
 *.pyd    binary
-*.bin    binary
-*.bin    filter=lfs diff=lfs merge=lfs
-*.sqlite3 binary
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.sqlite3 filter=lfs diff=lfs merge=lfs -text
 
 # Jupyter notebook
 *.ipynb  text eol=lf
@@ -27,5 +26,4 @@
 # with the python modules ``pickle``, ``dbm.*``,
 # ``shelve``, ``marshal``, ``anydbm``, & ``bsddb``
 # (among others).
-*.bin filter=lfs diff=lfs merge=lfs -text
-*.sqlite3 filter=lfs diff=lfs merge=lfs -text
+
