@@ -9,8 +9,14 @@ short_description: Bangladesh constitution law Agentic RAG implementation API
 ---
 
 *Chat URL*: `/chat`
+
+
 *Method*: `POST`
+
+
 *Content-Type*: `application/json`
+
+
 *Request Body*:
 ```json
 {
