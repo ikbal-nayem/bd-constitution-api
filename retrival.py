@@ -67,7 +67,7 @@ class Retrival:
 
     def selfQuery(self, query: str, n_results=5):
         query_json = self.generateQueryAndFilters(query)
-        print("Query JSON ==> "+query_json, "\n")
+        print("Query JSON ==> ", query_json, "\n")
         return self.query(query_json["query"], n_results=n_results)
 
     def query(self, query: str, n_results=5):
