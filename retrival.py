@@ -67,7 +67,7 @@ class Retrival:
 
     def selfQuery(self, query: str, n_results=5):
         query_json = self.generateQueryAndFilters(query)
-        print(query_json, "\n")
+        print("Query JSON ==> "+query_json, "\n")
         return self.query(query_json["query"], n_results=n_results)
 
     def query(self, query: str, n_results=5):
@@ -83,6 +83,7 @@ retrival = Retrival(EMBEDDING_MODEL, client,
 
 def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
+    print("[Query] : "+last_message)
     sq_res = retrival.selfQuery(last_message, 10)
     sq_context_text = "\n\n-----\n\n".join(
         [f"{doc}\n\n## metadata={sq_res['metadatas'][0][i]}" for i, doc in enumerate(sq_res['documents'][0])])
