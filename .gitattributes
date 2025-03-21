@@ -20,6 +20,7 @@
 *.bin    binary
 *.bin    filter=lfs diff=lfs merge=lfs
 *.sqlite3 binary
+
 # Jupyter notebook
 *.ipynb  text eol=lf
 # Note: .db, .p, and .pkl files are associated
