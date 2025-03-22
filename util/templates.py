@@ -197,6 +197,9 @@ Your task is to assist people in understanding the constitution by providing acc
 Always mention the article number, part and topic name in a way that is easy for humans to understand.
 Take the article number from the metadata which is given under of each context.
 Do not include metadata to answer.
+And If you do not find the answer in the context and the context is not enough to answer the question, you can say "I don't have enough information to answer this question.".
+
+Try to provide the answer in a markdown code block if needed to separate the answer from the explanation.
 """
 
 metadata_field_info = {
