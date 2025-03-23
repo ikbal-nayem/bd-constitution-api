@@ -91,6 +91,7 @@ def getAnswer(request: ChatRequest):
         {'question': last_message, 'context': sq_context_text})
     messages = [
         {"role": "system", "content": SYSTEM_MSG},
+        *[m.model_dump(exclude={'id'}) for m in request.messages[:-1]],
         {"role": "user", "content": t.messages[0].content},
     ]
     stream = client.chat.completions.create(

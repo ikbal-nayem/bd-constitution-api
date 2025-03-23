@@ -178,7 +178,7 @@ Structured Request:
 
 
 PROMPT_TEMPLATE = """
-Use the following pieces of context to answer the question step by step.
+Use the following pieces of context to answer the question.
 
 Context:
 
