@@ -68,9 +68,11 @@ class Retrival:
     def selfQuery(self, query: str, n_results=5):
         query_json = self.generateQueryAndFilters(query)
         print("Query JSON ==> ", query_json, "\n")
+        if (query_json["filter"] == '' or query_json['filter'] == 'NO_FILTER') and query_json["query"] == '':
+            return {'documents': [[]]}
         return self.query(query_json["query"], n_results=n_results)
 
-    def query(self, query: str, n_results=5):
+    def query(self, query: str, n_results: int):
         query_vector = self.model(**self.tokenizer(query, return_tensors="pt").to(
             self.__device)).last_hidden_state.mean(1).detach().to(torch.float32).cpu().numpy().flatten()
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)

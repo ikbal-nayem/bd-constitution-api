@@ -31,6 +31,7 @@ Make sure that filters only use the attributed names with its function names if 
 Make sure that filters only use format `YYYY-MM-DD` when handling date data typed values.
 Make sure that filters take into account the descriptions of attributes and only make comparisons that are feasible given the type of data being stored.
 Make sure that filters are only used as needed. If there are no filters that should be applied return "NO_FILTER" for the filter value.
+Make sure that the query string is relevant to the data source and the user query, If user query is not relevant to the data source return an empty string for the query value.
 
 << Example 1. >>
 Data Source:
@@ -161,7 +162,7 @@ Structured Request:
 
 << Example end. >>
 
-Your answer should be a JSON object only. No more text, no explaination.
+Make sure your answer should be a JSON object only. No more text, no explaination.
 """
 
 SQ_PROMPT_TEMPLATE = """
@@ -196,10 +197,12 @@ Your task is to assist people in understanding the constitution by providing acc
 1st try to give exact answer then explain it with the article number and the topic name if necessery.
 Always mention the article number, part and topic name in a way that is easy for humans to understand.
 Take the article number from the metadata which is given under of each context.
-Do not include metadata to answer.
-And If you do not find the answer in the context and the context is not enough to answer the question, you can say "I don't have enough information to answer this question.".
+Make sure to not include metadata to answer.
 
-Try to provide the answer in a markdown code block if needed to separate the answer from the explanation.
+To represent the answer more human friendly, Try to provide markdown code block if necessery.
+Make sure to provide the answer in a clear and concise manner. Do not provide any information that is not asked for.
+Make sure if the user do not ask any question then do not include additional information just greeting.
+If you do not find the answer in the context and the context is not enough to answer the question, do not answer it".
 """
 
 metadata_field_info = {
