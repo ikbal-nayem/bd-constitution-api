@@ -91,7 +91,9 @@ def getAnswer(request: ChatRequest):
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_list.append(
-            f"{sq_res['metadatas'][0][i]['articleBn'] if language == 'bn' else doc}\n\n## metadata={sq_res['metadatas'][0][i]}")
+            f"{sq_res['metadatas'][0][i]['articleBn'] if language == 'bn' else doc}\n\n\
+                ## article={sq_res['metadatas'][0][i]['articleNoBn'] if language == 'bn' else sq_res['metadatas'][0][i]['articleNoEn']}\
+                ## topic={sq_res['metadatas'][0][i]['topicBn'] if language == 'bn' else sq_res['metadatas'][0][i]['topicEn']}")
     sq_context_text = "\n\n-----\n\n".join(context_list)
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
