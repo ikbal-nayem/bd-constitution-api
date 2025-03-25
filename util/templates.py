@@ -32,6 +32,8 @@ Make sure that filters only use format `YYYY-MM-DD` when handling date data type
 Make sure that filters take into account the descriptions of attributes and only make comparisons that are feasible given the type of data being stored.
 Make sure that filters are only used as needed. If there are no filters that should be applied return "NO_FILTER" for the filter value.
 Make sure that the query string is relevant to the data source and the user query, If user query is not relevant to the data source return an empty string for the query value.
+Remember that, the user may ask for information in bangla or english, so make sure to handle both languages.
+Incase of bangla language, make sure to convert the query into english and use the bangla attribute names.
 
 << Example 1. >>
 Data Source:
@@ -163,6 +165,7 @@ Structured Request:
 << Example end. >>
 
 Make sure your answer should be a JSON object only. No more text, no explaination.
+Set an additional attibute called 'language' in the JSON object to specify the language user wants to comunicate. The value should be 'bn' for Bangla and 'en' for English.
 """
 
 SQ_PROMPT_TEMPLATE = """
@@ -178,7 +181,7 @@ Structured Request:
 """
 
 
-PROMPT_TEMPLATE = """
+PROMPT_TEMPLATE = r"""
 Use the following pieces of context to answer the question.
 
 Context:
@@ -191,29 +194,24 @@ Question: {question}
 Answer:
 """
 
-SYSTEM_MSG = """
+SYSTEM_MSG = r"""
 You are an official representative of Bangladesh, fully knowledgeable about every article of the Bangladesh Constitution. Your role is to assist users in understanding the constitution by providing accurate, well-structured, and human-friendly responses.
 
 Guidelines for Answering:
 1. Prioritize Accuracy & Relevance
 First, provide a direct and precise answer.
-
 Then, explain further if necessary, referencing the article number, part, and topic name in an easy-to-understand way.
-
 Ensure to use the metadata in the context to extract the article number, but do not include metadata directly in the response.
 
 2. Human-Friendly Responses
 Format responses in Markdown for better readability.
-
 Ensure answers are clear, concise, and natural, avoiding robotic or overly technical language.
+User questions may be in Bangla or English, so respond in the same language as the question.
 
 3. Engaging in Natural Conversations
 If the user greets you (e.g., "Hi," "Hello"), respond naturally without legal information or question-answer examples.
-
 If the user thanks you, reply with "You're welcome!" or something similar.
-
 If the user ends the conversation (e.g., "Bye"), respond appropriately with "Goodbye! Have a great day!"
-
 If the user’s input is not a question, respond casually instead of providing additional legal information.
 
 4. Handling Insufficient Context
@@ -223,18 +221,15 @@ If the provided context does not contain the answer or is insufficient, clearly 
 metadata_field_info = {
     "content": "The documents contains the article text of the Constitution of Bangladesh without mentioning own article number. But it may contain another article number for referance.",
     "attributes": {
-        "article": {
+        "articleNoBn": {
             "type": "string",
-            "description": "The article number of the Bangladesh Constitution (e.g., '1', '2A')."
+            "description": "The article number of the Bangladesh Constitution (e.g., '১', '২ক', '৭১খ')."
         },
-        # "topic": {
-        #     "type": "string",
-        #     "description": "The topic or subject covered by the content."
-        # },
-        "part": {
+        "articleNoEn": {
             "type": "string",
-            "description": "The constitution is devided into 11 sections, Parts represented in uppercase Roman numerals. Must be one of: 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'."
-        }
+            "description": "The article number of the Bangladesh Constitution (e.g., '1', '3A', '54')."
+        },
+
     }
 }
 

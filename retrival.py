@@ -69,7 +69,8 @@ class Retrival:
         query_json = self.generateQueryAndFilters(query)
         print("Query JSON ==> ", query_json, "\n")
         if query_json.get("query"):
-            return self.query(query_json.get("query"), n_results=n_results)
+            q_res = self.query(query_json.get("query"), n_results=n_results)
+            return q_res, query_json.get("language")
         return {'documents': [[]]}
 
     def query(self, query: str, n_results: int):
@@ -86,9 +87,13 @@ retrival = Retrival(EMBEDDING_MODEL, client,
 def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res = retrival.selfQuery(last_message, 10)
-    sq_context_text = "\n\n-----\n\n".join(
-        [f"{doc}\n\n## metadata={sq_res['metadatas'][0][i]}" for i, doc in enumerate(sq_res['documents'][0])])
+    sq_res, language = retrival.selfQuery(last_message, 10)
+    context_list = []
+    for i, doc in enumerate(sq_res['documents'][0]):
+        context_list.append(
+            f"{sq_res['metadatas'][0][i]['articleBn'] if language == 'bn' else doc}\n\n## metadata={sq_res['metadatas'][0][i]}")
+    sq_context_text = "\n\n-----\n\n".join(context_list)
+    print(context_list)
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
     messages = [
