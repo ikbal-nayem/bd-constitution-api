@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 from retrival import getAnswer
 from util.types import ChatRequest
