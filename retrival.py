@@ -52,7 +52,7 @@ class Retrival:
             model=llm_model,
             messages=messages,
             temperature=0.5,
-            stream=False
+            stream=False,
         )
         json_str = llm_res.choices[0].message.content
         try:
