@@ -67,11 +67,12 @@ class Retrival:
 
     def selfQuery(self, query: str, n_results=5):
         query_json = self.generateQueryAndFilters(query)
+        q_language = query_json.get("language")
         print("Query JSON ==> ", query_json, "\n")
         if query_json.get("query"):
             q_res = self.query(query_json.get("query"), n_results=n_results)
-            return q_res, query_json.get("language")
-        return {'documents': [[]]}
+            return q_res, q_language
+        return {'documents': [[]]}, q_language
 
     def query(self, query: str, n_results: int):
         query_vector = self.model(**self.tokenizer(text=query, return_tensors="pt").to(
