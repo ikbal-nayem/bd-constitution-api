@@ -3,6 +3,9 @@ import torch
 import re
 import os
 import json
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 from dotenv import load_dotenv
 from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -15,7 +18,19 @@ from util.types import ChatRequest
 load_dotenv()
 
 db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
+server_params = StdioServerParameters(
+    command="python",
+    args=[os.path.join(os.path.dirname(__file__), "mcp-server.py")]
+)
 
+async def load_mcp_tools():
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            # result = await session.call_tool("translate", arguments={"text": "ন্যায়পাল", "source_language": "bn", "target_language": "en"})
+            # print(result)
+            return tools
 
 class Retrival:
     __device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,6 +44,11 @@ class Retrival:
         self.client = client
         self.attribute_info = attribute_info
 
+        loop = asyncio.get_event_loop() 
+        self.pool = loop.run_until_complete(load_mcp_tools())
+
+        # self.async_init()
+
         self.collection = db_client.get_or_create_collection(
             name=collection_name,
             embedding_function=SentenceTransformerEmbeddingFunction(
@@ -37,6 +57,10 @@ class Retrival:
                 device=self.__device
             )
         )
+
+    async def async_init(self):
+        print(self.mcp_tools)
+        self.mcp_tools = await load_mcp_tools()
 
     def generateQueryMsg(self, temp):
         return [
@@ -48,12 +72,15 @@ class Retrival:
         pipe = (self_query_prompt | self.generateQueryMsg)
         messages = pipe.invoke({'question': question, 'attribute_info': json.dumps(
             attribute_info or self.attribute_info)})
+        print(self.mcp_tools)
         llm_res = self.client.chat_completion(
             model=llm_model,
             messages=messages,
             temperature=0.5,
             stream=False,
+            tools=self.mcp_tools
         )
+        print("LLM response ==> ", llm_res)
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
@@ -82,12 +109,15 @@ class Retrival:
 
 client = InferenceClient(api_key=os.getenv("HF_TOKEN"))
 retrival = Retrival(EMBEDDING_MODEL, client,
-                    collection_name="bd-constitution", attribute_info=metadata_field_info)
+                        collection_name="bd-constitution", attribute_info=metadata_field_info)
 
+# loop = asyncio.get_event_loop()
+# loop.run_until_complete(retrival.async_init())
 
 def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
+    print(retrival.mcp_tools)
     sq_res, language = retrival.selfQuery(last_message, 10)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
