@@ -13,6 +13,6 @@ def read_root():
 
 
 @app.post("/chat")
-def chat_response(request: ChatRequest):
-    res = getAnswer(request)
+async def chat_response(request: ChatRequest):
+    res = await getAnswer(request)
     return {"message": res}
