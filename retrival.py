@@ -22,14 +22,24 @@ server_params = StdioServerParameters(
     args=[os.path.join(os.path.dirname(__file__), "mcp-server.py")]
 )
 
-# async def load_mcp_tools():
-#     async with stdio_client(server_params) as (read, write):
-#         async with ClientSession(read, write) as session:
-#             await session.initialize()
-#             tools = await session.list_tools()
-#             # result = await session.call_tool("translate", arguments={"text": "ন্যায়পাল", "source_language": "bn", "target_language": "en"})
-#             # print(result)
-#             return tools
+
+async def get_mcp_tools():
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            return [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.inputSchema  # Ensure this follows JSON schema
+                    }
+                }
+                for tool in tools.tools
+            ]
+
 
 class Retrival:
     __device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,19 +75,15 @@ class Retrival:
             attribute_info or self.attribute_info)})
 
         if self.mcp_tools is None:
-            async with stdio_client(server_params) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-                    tools = await session.list_tools()
-                    self.mcp_tools = tools
-                    print("MCP tools ==> ", self.mcp_tools)
+            self.mcp_tools = await get_mcp_tools()
+            print("MCP tools ==> ", self.mcp_tools)
 
         llm_res = self.client.chat_completion(
             model=llm_model,
             messages=messages,
             temperature=0.5,
             stream=False,
-            tools=self.mcp_tools.model_dump().get('tools')
+            tools=self.mcp_tools
         )
         print("LLM response ==> ", llm_res)
         json_str = llm_res.choices[0].message.content
@@ -108,7 +114,7 @@ class Retrival:
 
 client = InferenceClient(api_key=os.getenv("HF_TOKEN"))
 retrival = Retrival(EMBEDDING_MODEL, client,
-                        collection_name="bd-constitution", attribute_info=metadata_field_info)
+                    collection_name="bd-constitution", attribute_info=metadata_field_info)
 
 
 async def getAnswer(request: ChatRequest):
