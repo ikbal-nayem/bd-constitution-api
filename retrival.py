@@ -34,13 +34,14 @@ async def get_mcp_tools():
                     "function": {
                         "name": tool.name,
                         "description": tool.description,
-                        "parameters": tool.inputSchema  # Ensure this follows JSON schema
+                        "parameters": tool.inputSchema
                     }
                 }
                 for tool in tools.tools
             ]
 
-async def execute_mcp_tool(tool_name:str, args:json):
+
+async def execute_mcp_tool(tool_name: str, args: json):
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
@@ -78,7 +79,8 @@ class Retrival:
 
     def getLLMResponse(self, q: str, llm_model: str = LLM):
         pipe = (self_query_prompt | self.generateQueryMsg)
-        messages = pipe.invoke({'question': q, 'attribute_info': json.dumps(self.attribute_info)})
+        messages = pipe.invoke(
+            {'question': q, 'attribute_info': json.dumps(self.attribute_info)})
         return self.client.chat_completion(
             model=llm_model,
             messages=messages,
@@ -93,12 +95,14 @@ class Retrival:
             print("MCP tools ==> ", self.mcp_tools)
 
         llm_res = self.getLLMResponse(question, llm_model=llm_model)
-        if "tool_calls" in llm_res.choices[0].message:
+        if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
             tool_call = llm_res.choices[0].message.tool_calls[0]
             print("Tool call ==> ", tool_call)
             result = await execute_mcp_tool(tool_call.function.name, json.loads(tool_call.function.arguments))
             print("Tool call result ==> ", result.content[0].text)
-            llm_res = self.getLLMResponse(result.content[0].text, llm_model=llm_model)
+            llm_res = self.getLLMResponse(
+                result.content[0].text, llm_model=llm_model)
+        print("LLM response ==> ", llm_res.choices[0].message.content)
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
