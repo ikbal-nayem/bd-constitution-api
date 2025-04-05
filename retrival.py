@@ -23,22 +23,29 @@ server_params = StdioServerParameters(
 )
 
 
-async def get_mcp_tools():
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            tools = await session.list_tools()
-            return [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.inputSchema  # Ensure this follows JSON schema
-                    }
-                }
-                for tool in tools.tools
-            ]
+# async def get_mcp_tools():
+#     async with stdio_client(server_params) as (read, write):
+#         async with ClientSession(read, write) as session:
+#             await session.initialize()
+#             tools = await session.list_tools()
+#             return [
+#                 {
+#                     "type": "function",
+#                     "function": {
+#                         "name": tool.name,
+#                         "description": tool.description,
+#                         "parameters": tool.inputSchema  # Ensure this follows JSON schema
+#                     }
+#                 }
+#                 for tool in tools.tools
+#             ]
+
+# async def execute_mcp_tool(tool_name, args):
+#     async with stdio_client(server_params) as (read, write):
+#         async with ClientSession(read, write) as session:
+#             await session.initialize()
+#             result = await session.call_tool(tool_name, arguments=args)
+#             return result
 
 
 class Retrival:
@@ -68,6 +75,15 @@ class Retrival:
             {"role": "system", "content": SQ_SYSTEM_MSG},
             {"role": "user", "content": temp.messages[0].content},
         ]
+    
+    def getLLMResponse(self, messages: list, llm_model: str = LLM):
+        return self.client.chat_completion(
+            model=llm_model,
+            messages=messages,
+            temperature=0.5,
+            stream=False,
+            tools=self.mcp_tools
+        )
 
     async def generateQueryAndFilters(self, question: str, attribute_info: dict = None, llm_model: str = LLM):
         pipe = (self_query_prompt | self.generateQueryMsg)
@@ -75,17 +91,14 @@ class Retrival:
             attribute_info or self.attribute_info)})
 
         if self.mcp_tools is None:
-            self.mcp_tools = await get_mcp_tools()
+            async with stdio_client(server_params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    self.mcp_tools = await session.list_tools()
             print("MCP tools ==> ", self.mcp_tools)
 
-        llm_res = self.client.chat_completion(
-            model=llm_model,
-            messages=messages,
-            temperature=0.5,
-            stream=False,
-            tools=self.mcp_tools
-        )
-        print("LLM response ==> ", llm_res)
+        llm_res = self.getLLMResponse(messages=messages, llm_model=llm_model)
+        print("LLM response ==> ", llm_res.choices[0].message)
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
