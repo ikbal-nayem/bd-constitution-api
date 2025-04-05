@@ -11,7 +11,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 from huggingface_hub import InferenceClient
 
 from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, self_query_prompt, metadata_field_info, chat_prompt
-from util.config import DB_STORAGE_PATH, EMBEDDING_MODEL, LLM
+from util.config import DB_STORAGE_PATH, EMBEDDING_MODEL, HF_TOKEN, LLM
 from util.types import ChatRequest
 
 load_dotenv()
@@ -23,29 +23,29 @@ server_params = StdioServerParameters(
 )
 
 
-# async def get_mcp_tools():
-#     async with stdio_client(server_params) as (read, write):
-#         async with ClientSession(read, write) as session:
-#             await session.initialize()
-#             tools = await session.list_tools()
-#             return [
-#                 {
-#                     "type": "function",
-#                     "function": {
-#                         "name": tool.name,
-#                         "description": tool.description,
-#                         "parameters": tool.inputSchema  # Ensure this follows JSON schema
-#                     }
-#                 }
-#                 for tool in tools.tools
-#             ]
+async def get_mcp_tools():
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            return [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.inputSchema  # Ensure this follows JSON schema
+                    }
+                }
+                for tool in tools.tools
+            ]
 
-# async def execute_mcp_tool(tool_name, args):
-#     async with stdio_client(server_params) as (read, write):
-#         async with ClientSession(read, write) as session:
-#             await session.initialize()
-#             result = await session.call_tool(tool_name, arguments=args)
-#             return result
+async def execute_mcp_tool(tool_name:str, args:json):
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool(tool_name, arguments=args)
+            return result
 
 
 class Retrival:
@@ -75,30 +75,30 @@ class Retrival:
             {"role": "system", "content": SQ_SYSTEM_MSG},
             {"role": "user", "content": temp.messages[0].content},
         ]
-    
-    def getLLMResponse(self, messages: list, llm_model: str = LLM):
+
+    def getLLMResponse(self, q: str, llm_model: str = LLM):
+        pipe = (self_query_prompt | self.generateQueryMsg)
+        messages = pipe.invoke({'question': q, 'attribute_info': json.dumps(self.attribute_info)})
         return self.client.chat_completion(
             model=llm_model,
             messages=messages,
-            temperature=0.5,
+            temperature=0,
             stream=False,
             tools=self.mcp_tools
         )
 
-    async def generateQueryAndFilters(self, question: str, attribute_info: dict = None, llm_model: str = LLM):
-        pipe = (self_query_prompt | self.generateQueryMsg)
-        messages = pipe.invoke({'question': question, 'attribute_info': json.dumps(
-            attribute_info or self.attribute_info)})
-
+    async def generateQueryAndFilters(self, question: str, llm_model: str = LLM):
         if self.mcp_tools is None:
-            async with stdio_client(server_params) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-                    self.mcp_tools = await session.list_tools()
+            self.mcp_tools = await get_mcp_tools()
             print("MCP tools ==> ", self.mcp_tools)
 
-        llm_res = self.getLLMResponse(messages=messages, llm_model=llm_model)
-        print("LLM response ==> ", llm_res.choices[0].message)
+        llm_res = self.getLLMResponse(question, llm_model=llm_model)
+        if "tool_calls" in llm_res.choices[0].message:
+            tool_call = llm_res.choices[0].message.tool_calls[0]
+            print("Tool call ==> ", tool_call)
+            result = await execute_mcp_tool(tool_call.function.name, json.loads(tool_call.function.arguments))
+            print("Tool call result ==> ", result.content[0].text)
+            llm_res = self.getLLMResponse(result.content[0].text, llm_model=llm_model)
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
@@ -125,7 +125,7 @@ class Retrival:
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
 
 
-client = InferenceClient(api_key=os.getenv("HF_TOKEN"))
+client = InferenceClient(api_key=HF_TOKEN)
 retrival = Retrival(EMBEDDING_MODEL, client,
                     collection_name="bd-constitution", attribute_info=metadata_field_info)
 

@@ -1,39 +1,43 @@
 from langchain_core.prompts import ChatPromptTemplate
 
 SQ_SYSTEM_MSG = r"""
-You are the only expart of ChromaDB vector database, you have full knowledge about query and filter of the vector database.
-Your goal is to structure the user's query to match the request schema provided below.
+You are the only expert of ChromaDB vector database, with complete knowledge of how to structure queries and filters for the vector database.
+
+Your task is to transform the user's natural language query into a structured format as defined in the schema below.
 
 << Structured Request Schema >>
-When responding use a markdown code snippet with a JSON object formatted in the following schema:
+You must respond with a markdown code snippet containing a JSON object that strictly follows this format:
 
 {
-    "query": string \ text string to compare to document contents
-    "filter": string \ logical condition statement for filtering documents
+    "query": string // The plain text string to match against document contents
+    "filter": string // A logical filter expression to narrow down the document selection
+    "language": string // 'en' for English, 'bn' for Bangla
 }
 
-The query string should contain only text that is expected to match the contents of documents. Any conditions in the filter should not be mentioned in the query as well.
+Key Rules:
+- The `query` should only include the conceptual content meant to be semantically compared against the documents. Do NOT include any filterable conditions in the `query` value.
+- The `filter` should contain logical expressions based on attributes defined in the data source. If no filtering is needed or applicable, set `filter` to `"NO_FILTER"`.
+- If the user query is not relevant to the document contents, set `query` to an empty string.
+- The `language` field should reflect the language the user used to ask the question: `'en'` for English and `'bn'` for Bangla.
 
-A logical condition statement is composed of one or more comparison and logical operation statements.
+<< Logical Filter Expressions >>
+- A comparison statement follows: `comp(attr, val)`
+    - `comp` can be one of: eq, ne, gt, gte, lt, lte
+    - `attr` is the name of the attribute from the data source
+    - `val` is the value to compare
+- A logical operation follows: `op(statement1, statement2, ...)`
+    - `op` can be one of: and, or
 
-A comparison statement takes the form: `comp(attr, val)`:
-- `comp` (eq | ne | gt | gte | lt | lte): comparator
-- `attr` (string):  name of attribute to apply the comparison to
-- `val` (string): is the comparison value
+Important Translation Instruction:
+- If the user query is in **Bangla**, pass the **raw Bangla text directly to the translator tool**. Do NOT translate or interpret it yourself before using the translator tool.
+- If the user query is in **English**, use it directly.
 
-A logical operation statement takes the form `op(statement1, statement2, ...)`:
-- `op` (and | or): logical operator
-- `statement1`, `statement2`, ... (comparison statements or logical operation statements): one or more statements to apply the operation to
+General Rules:
+- Use only attribute names defined in the data source and only if the filtering is valid based on their type and description.
+- When handling date-type values, always format them as `YYYY-MM-DD`.
+- Only use filters when necessary; if not applicable, use `"NO_FILTER"`.
+- Respond only with the JSON object. Do not include explanations or extra text.
 
-Make sure that you only use the comparators and logical operators listed above and no others.
-Make sure that filters only refer to attributes that exist in the data source.
-Make sure that filters only use the attributed names with its function names if there are functions applied on them.
-Make sure that filters only use format `YYYY-MM-DD` when handling date data typed values.
-Make sure that filters take into account the descriptions of attributes and only make comparisons that are feasible given the type of data being stored.
-Make sure that filters are only used as needed. If there are no filters that should be applied return "NO_FILTER" for the filter value.
-Make sure that the query string is relevant to the data source and the user query, If user query is not relevant to the data source return an empty string for the query value.
-Remember that, the user may ask for information in bangla or english, so make sure to handle both languages.
-Incase of bangla language, make sure to convert the query into english and use the bangla attribute names.
 
 << Example 1. >>
 Data Source:
@@ -163,9 +167,6 @@ Structured Request:
 }
 
 << Example end. >>
-
-Make sure your answer should be a JSON object only. No more text, no explaination.
-Set an additional attibute called 'language' in the JSON object to specify the language user wants to comunicate. The value should be 'bn' for Bangla and 'en' for English.
 """
 
 SQ_PROMPT_TEMPLATE = """
@@ -223,11 +224,11 @@ metadata_field_info = {
     "attributes": {
         "articleNoBn": {
             "type": "string",
-            "description": "The article number of the Bangladesh Constitution (e.g., '১', '২ক', '৭১খ')."
+            "description": "Represents the article number of the Bangladesh Constitution in bangla (e.g., '১', '২ক', '৭১খ')."
         },
         "articleNoEn": {
             "type": "string",
-            "description": "The article number of the Bangladesh Constitution (e.g., '1', '3A', '54')."
+            "description": "Represents the article number of the Bangladesh Constitution in english (e.g., '1', '3A', '54')."
         },
 
     }
