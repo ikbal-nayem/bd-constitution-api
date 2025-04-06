@@ -222,14 +222,14 @@ If the provided context does not contain the answer or is insufficient, clearly 
 metadata_field_info = {
     "content": "The documents contains the article text of the Constitution of Bangladesh without mentioning own article number. But it may contain another article number for referance.",
     "attributes": {
-        "articleNoBn": {
-            "type": "string",
-            "description": "Represents the article number of the Bangladesh Constitution in bangla (e.g., '১', '২ক', '৭১খ')."
-        },
-        "articleNoEn": {
-            "type": "string",
-            "description": "Represents the article number of the Bangladesh Constitution in english (e.g., '1', '3A', '54')."
-        },
+        # "articleNoBn": {
+        #     "type": "string",
+        #     "description": "Represents the article number of the Bangladesh Constitution in bangla (e.g., '১', '২ক', '৭১খ')."
+        # },
+        # "articleNoEn": {
+        #     "type": "string",
+        #     "description": "Represents the article number of the Bangladesh Constitution in english (e.g., '1', '3A', '54')."
+        # },
 
     }
 }

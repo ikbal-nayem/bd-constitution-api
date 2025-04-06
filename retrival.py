@@ -92,32 +92,32 @@ class Retrival:
     async def generateQueryAndFilters(self, question: str, llm_model: str = LLM):
         if self.mcp_tools is None:
             self.mcp_tools = await get_mcp_tools()
-            print("MCP tools ==> ", self.mcp_tools)
+            print("[MCP TOOLS]", self.mcp_tools)
 
         llm_res = self.getLLMResponse(question, llm_model=llm_model)
+        translation_res = None
         if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
             tool_call = llm_res.choices[0].message.tool_calls[0]
-            print("Tool call ==> ", tool_call)
+            print("[Tool call]", tool_call)
             result = await execute_mcp_tool(tool_call.function.name, json.loads(tool_call.function.arguments))
-            print("Tool call result ==> ", result.content[0].text)
-            llm_res = self.getLLMResponse(
-                result.content[0].text, llm_model=llm_model)
-        print("LLM response ==> ", llm_res.choices[0].message.content)
+            translation_res = result.content[0].text
+            print("[Tool call result]", translation_res)
+            llm_res = self.getLLMResponse(translation_res, llm_model=llm_model)
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
             if json_match:
                 json_string = json_match.group(0)
                 return json.loads(json_string)
-            return {'query': question, 'filter': ''}
+            return {'query': translation_res or question, 'filter': ''}
         except:
-            print('LLM response JSON parse not error: '+json_str)
-            return {'query': question, 'filter': ''}
+            print(f'[Error] LLM response JSON: {json_str}')
+            return {'query': translation_res or question, 'filter': ''}
 
     async def selfQuery(self, query: str, n_results=5):
         query_json = await self.generateQueryAndFilters(query)
         q_language = query_json.get("language")
-        print("Query JSON ==> ", query_json, "\n")
+        print("[Query JSON]", query_json, "\n")
         if query_json.get("query"):
             q_res = self.query(query_json.get("query"), n_results=n_results)
             return q_res, q_language
@@ -145,6 +145,7 @@ async def getAnswer(request: ChatRequest):
                 ## article={sq_res['metadatas'][0][i]['articleNoBn'] if language == 'bn' else sq_res['metadatas'][0][i]['articleNoEn']}\
                 ## topic={sq_res['metadatas'][0][i]['topicBn'] if language == 'bn' else sq_res['metadatas'][0][i]['topicEn']}")
     sq_context_text = "\n\n-----\n\n".join(context_list)
+    print("[Context] :", [sq_res['metadatas'][0][i]['articleNoEn'] for i in range(len(sq_res['metadatas'][0]))])
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
     messages = [
@@ -158,7 +159,7 @@ async def getAnswer(request: ChatRequest):
         temperature=request.temperature or 0.5,
         stream=request.stream or False
     )
-    # print("Answer ==> ", stream.choices[0].message.content)
+    print("[ANSWER] :", stream.choices[0].message.content)
     return stream.choices[0].message.content
     # for chunk in stream:
     #     print(chunk.choices[0].delta.content, end="")
