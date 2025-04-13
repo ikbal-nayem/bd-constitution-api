@@ -171,6 +171,8 @@ Structured Request:
 }
 
 << Example end. >>
+
+Make sure to set 'bn' in the language field if the user message is in Bangla, and 'en' if it is in English.
 """
 
 SQ_PROMPT_TEMPLATE = """

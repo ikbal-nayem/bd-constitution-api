@@ -93,10 +93,9 @@ class Retrival:
     async def generateQueryAndFilters(self, question: str, llm_model: str = LLM):
         # if self.mcp_tools is None:
         #     self.mcp_tools = await get_mcp_tools()
-            # print("[MCP TOOLS]", self.mcp_tools)
+        # print("[MCP TOOLS]", self.mcp_tools)
 
         llm_res = self.getLLMResponse(question, llm_model=llm_model)
-        translation_res = None
         # if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
         #     tool_call = llm_res.choices[0].message.tool_calls[0]
         #     print("[Tool call]", tool_call)
@@ -104,16 +103,19 @@ class Retrival:
         #     translation_res = result.content[0].text
         #     print("[Tool call result]", translation_res)
         #     llm_res = self.getLLMResponse(translation_res, llm_model=llm_model)
+
+        if llm_res.error:
+            raise Exception(f"LLM Error: {llm_res.error.get('message')}")
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
             if json_match:
                 json_string = json_match.group(0)
                 return json.loads(json_string)
-            return {'query': translation_res or question, 'filter': ''}
+            return {'query': question, 'filter': ''}
         except:
             print(f'[Error] LLM response JSON: {json_str}')
-            return {'query': translation_res or question, 'filter': ''}
+            return {'query': question, 'filter': ''}
 
     async def selfQuery(self, query: str, n_results=5):
         query_json = await self.generateQueryAndFilters(query)
@@ -130,7 +132,6 @@ class Retrival:
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
 
 
-# client = InferenceClient(api_key=HF_TOKEN)
 client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=OR_TOKEN)
 retrival = Retrival(EMBEDDING_MODEL, client,
                     collection_name="bd-constitution", attribute_info=metadata_field_info)
@@ -148,7 +149,8 @@ async def getAnswer(request: ChatRequest):
                 ## topic={sq_res['metadatas'][0][i]['topicBn'] if language == 'bn' else sq_res['metadatas'][0][i]['topicEn']}")
     sq_context_text = "\n\n-----\n\n".join(context_list)
     if sq_context_text:
-        print("[Context] :", [sq_res['metadatas'][0][i]['articleNoEn'] for i in range(len(sq_res['metadatas'][0]))])
+        print("[Context] :", [sq_res['metadatas'][0][i]['articleNoEn']
+              for i in range(len(sq_res['metadatas'][0]))])
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
     messages = [
