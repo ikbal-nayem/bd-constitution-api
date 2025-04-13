@@ -4,7 +4,6 @@ import httpx
 mcp = FastMCP("Translator")
 
 @mcp.tool()
-
 async def translate(text: str, source_language: str, target_language: str) -> str:
   """Translate text from source language to target language."""
   async with httpx.AsyncClient() as client:

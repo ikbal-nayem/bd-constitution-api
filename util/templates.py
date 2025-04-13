@@ -11,7 +11,7 @@ You must respond with a markdown code snippet containing a JSON object that stri
 {
     "query": string // The plain text string to match against document contents
     "filter": string // A logical filter expression to narrow down the document selection
-    "language": string // 'en' for English, 'bn' for Bangla
+    "language": string // 'en' if user message in English, 'bn' if user message in Bangla
 }
 
 Key Rules:
@@ -28,9 +28,13 @@ Key Rules:
 - A logical operation follows: `op(statement1, statement2, ...)`
     - `op` can be one of: and, or
 
+# Important Translation Instruction:
+# - If the user message is in **Bangla** language, pass the **raw Bangla text directly to the translator tool**. Do NOT translate or interpret it yourself before using the translator tool.
+# - If the user message is in **English**, use it directly.
+
 Important Translation Instruction:
-- If the user query is in **Bangla**, pass the **raw Bangla text directly to the translator tool**. Do NOT translate or interpret it yourself before using the translator tool.
-- If the user query is in **English**, use it directly.
+- If the user message is in **Bangla** language, then translate it into english and then set to the query and filter as usual.
+- Do not pass the **Bangla** or **any other language** text to the response translate it and then make response.
 
 General Rules:
 - Use only attribute names defined in the data source and only if the filtering is valid based on their type and description.
@@ -222,15 +226,14 @@ If the provided context does not contain the answer or is insufficient, clearly 
 metadata_field_info = {
     "content": "The documents contains the article text of the Constitution of Bangladesh without mentioning own article number. But it may contain another article number for referance.",
     "attributes": {
-        # "articleNoBn": {
-        #     "type": "string",
-        #     "description": "Represents the article number of the Bangladesh Constitution in bangla (e.g., '১', '২ক', '৭১খ')."
-        # },
-        # "articleNoEn": {
-        #     "type": "string",
-        #     "description": "Represents the article number of the Bangladesh Constitution in english (e.g., '1', '3A', '54')."
-        # },
-
+        "articleNoBn": {
+            "type": "string",
+            "description": "Represents the article number of the Bangladesh Constitution in bangla (e.g., '১', '২ক', '৭১খ')."
+        },
+        "articleNoEn": {
+            "type": "string",
+            "description": "Represents the article number of the Bangladesh Constitution in english (e.g., '1', '3A', '54')."
+        },
     }
 }
 

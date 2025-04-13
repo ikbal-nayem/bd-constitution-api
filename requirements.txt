@@ -6,6 +6,6 @@ torch
 transformers
 sentence_transformers
 langchain_core
-huggingface_hub
 python-dotenv
+openai
 mcp

@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from huggingface_hub import InferenceClient
+from openai import OpenAI
 
 from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, self_query_prompt, metadata_field_info, chat_prompt
-from util.config import DB_STORAGE_PATH, EMBEDDING_MODEL, HF_TOKEN, LLM
+from util.config import DB_STORAGE_PATH, EMBEDDING_MODEL, LLM, OR_TOKEN
 from util.types import ChatRequest
 
 load_dotenv()
@@ -81,28 +82,28 @@ class Retrival:
         pipe = (self_query_prompt | self.generateQueryMsg)
         messages = pipe.invoke(
             {'question': q, 'attribute_info': json.dumps(self.attribute_info)})
-        return self.client.chat_completion(
+        return self.client.chat.completions.create(
             model=llm_model,
             messages=messages,
             temperature=0,
             stream=False,
-            tools=self.mcp_tools
+            # tools=self.mcp_tools
         )
 
     async def generateQueryAndFilters(self, question: str, llm_model: str = LLM):
-        if self.mcp_tools is None:
-            self.mcp_tools = await get_mcp_tools()
-            print("[MCP TOOLS]", self.mcp_tools)
+        # if self.mcp_tools is None:
+        #     self.mcp_tools = await get_mcp_tools()
+            # print("[MCP TOOLS]", self.mcp_tools)
 
         llm_res = self.getLLMResponse(question, llm_model=llm_model)
         translation_res = None
-        if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
-            tool_call = llm_res.choices[0].message.tool_calls[0]
-            print("[Tool call]", tool_call)
-            result = await execute_mcp_tool(tool_call.function.name, json.loads(tool_call.function.arguments))
-            translation_res = result.content[0].text
-            print("[Tool call result]", translation_res)
-            llm_res = self.getLLMResponse(translation_res, llm_model=llm_model)
+        # if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
+        #     tool_call = llm_res.choices[0].message.tool_calls[0]
+        #     print("[Tool call]", tool_call)
+        #     result = await execute_mcp_tool(tool_call.function.name, json.loads(tool_call.function.arguments))
+        #     translation_res = result.content[0].text
+        #     print("[Tool call result]", translation_res)
+        #     llm_res = self.getLLMResponse(translation_res, llm_model=llm_model)
         json_str = llm_res.choices[0].message.content
         try:
             json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
@@ -129,7 +130,8 @@ class Retrival:
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
 
 
-client = InferenceClient(api_key=HF_TOKEN)
+# client = InferenceClient(api_key=HF_TOKEN)
+client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=OR_TOKEN)
 retrival = Retrival(EMBEDDING_MODEL, client,
                     collection_name="bd-constitution", attribute_info=metadata_field_info)
 
@@ -145,7 +147,8 @@ async def getAnswer(request: ChatRequest):
                 ## article={sq_res['metadatas'][0][i]['articleNoBn'] if language == 'bn' else sq_res['metadatas'][0][i]['articleNoEn']}\
                 ## topic={sq_res['metadatas'][0][i]['topicBn'] if language == 'bn' else sq_res['metadatas'][0][i]['topicEn']}")
     sq_context_text = "\n\n-----\n\n".join(context_list)
-    print("[Context] :", [sq_res['metadatas'][0][i]['articleNoEn'] for i in range(len(sq_res['metadatas'][0]))])
+    if sq_context_text:
+        print("[Context] :", [sq_res['metadatas'][0][i]['articleNoEn'] for i in range(len(sq_res['metadatas'][0]))])
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
     messages = [
