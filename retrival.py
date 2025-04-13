@@ -3,12 +3,11 @@ import torch
 import re
 import os
 import json
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+# from mcp import ClientSession, StdioServerParameters
+# from mcp.client.stdio import stdio_client
 from dotenv import load_dotenv
 from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-from huggingface_hub import InferenceClient
 from openai import OpenAI
 
 from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, self_query_prompt, metadata_field_info, chat_prompt
@@ -18,36 +17,36 @@ from util.types import ChatRequest
 load_dotenv()
 
 db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
-server_params = StdioServerParameters(
-    command="python",
-    args=[os.path.join(os.path.dirname(__file__), "mcp-server.py")]
-)
+# server_params = StdioServerParameters(
+#     command="python",
+#     args=[os.path.join(os.path.dirname(__file__), "mcp-server.py")]
+# )
 
 
-async def get_mcp_tools():
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            tools = await session.list_tools()
-            return [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.inputSchema
-                    }
-                }
-                for tool in tools.tools
-            ]
+# async def get_mcp_tools():
+#     async with stdio_client(server_params) as (read, write):
+#         async with ClientSession(read, write) as session:
+#             await session.initialize()
+#             tools = await session.list_tools()
+#             return [
+#                 {
+#                     "type": "function",
+#                     "function": {
+#                         "name": tool.name,
+#                         "description": tool.description,
+#                         "parameters": tool.inputSchema
+#                     }
+#                 }
+#                 for tool in tools.tools
+#             ]
 
 
-async def execute_mcp_tool(tool_name: str, args: json):
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool(tool_name, arguments=args)
-            return result
+# async def execute_mcp_tool(tool_name: str, args: json):
+#     async with stdio_client(server_params) as (read, write):
+#         async with ClientSession(read, write) as session:
+#             await session.initialize()
+#             result = await session.call_tool(tool_name, arguments=args)
+#             return result
 
 
 class Retrival:
@@ -104,7 +103,7 @@ class Retrival:
         #     print("[Tool call result]", translation_res)
         #     llm_res = self.getLLMResponse(translation_res, llm_model=llm_model)
 
-        if llm_res.error:
+        if not llm_res.choices:
             raise Exception(f"LLM Error: {llm_res.error.get('message')}")
         json_str = llm_res.choices[0].message.content
         try:
