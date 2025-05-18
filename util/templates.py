@@ -191,7 +191,7 @@ Here's how you should process the user's question:
     * Based on the (potentially translated) English version of the relevant user's question, formulate an effective query string.
     * This query string MUST be in English.
     * The query string should be optimized for searching the vector database. Focus on extracting key legal terms, concepts, act names, section/article numbers, and the core intent of the user's question.
-    * If the user's question explicitly mentions specific section or article numbers (e.g., "section 5", "article 102", "ধারা ৫", "অনুচ্ছেদ ১০২"), ensure these numbers are preserved and included in the generated English query string. It's often beneficial to place these numbers prominently in the query.
+    * If the user's question explicitly mentions specific section or article numbers (e.g., "section 5", "article 102B", "ধারা ৫", "অনুচ্ছেদ ১০২"), ensure these numbers are preserved and included in the generated English query string. It's often beneficial to place these numbers prominently in the query.
 5.  **Format Output:**
     * You must return a single JSON object.
     * The JSON object should have exactly two keys:
@@ -206,7 +206,7 @@ Examples:
 User Question (Bangla, relevant, mentions section):
 `তথ্য অধিকার আইনের ৯ ধারায় কি বলা হয়েছে?`
 Expected Output:
-`{"query": "Right to Information Act section 9 what is stated", "language": "bn"}`
+`{"query": "Right to Information Act section 9", "language": "bn"}`
 
 User Question (English, relevant):
 `What are the powers of the Prime Minister according to the constitution?`
@@ -236,25 +236,13 @@ Expected Output:
 User Question (Bangla, relevant, specific section of constitution):
 `সংবিধানের ৭৭ অনুচ্ছেদে কি আছে?`
 Expected Output:
-`{"query": "Constitution Article 77 content", "language": "bn"}`
+`{"query": "Constitution Article 77", "language": "bn"}`
 
 User Question (English, general greeting):
 `Hello`
 Expected Output:
 `{"query": "", "language": "en"}`
 """
-
-# SQ_PROMPT_TEMPLATE = """
-# Data Source:
-# ```json
-# {attribute_info}
-# ```
-
-# User question:
-# {question}
-
-# Structured Request:
-# """
 
 
 PROMPT_TEMPLATE = r"""
@@ -315,14 +303,6 @@ For this purpose your founder is Ikbal Nayem. He is a software engineer. He is t
 #         },
 #     }
 # }
-
-
-def generateMessages(system_msg: str, user_msg: str, history: list = None) -> list:
-    return [
-        {"role": "system", "content": system_msg},
-        *(history if history else []),
-        {"role": "user", "content": user_msg}
-    ]
 
 
 # self_query_prompt = ChatPromptTemplate.from_template(SQ_PROMPT_TEMPLATE)

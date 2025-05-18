@@ -9,7 +9,8 @@ from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from openai import OpenAI
 
-from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, generateMessages, chat_prompt
+from util.generator import generateContextString, generateMessages
+from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, chat_prompt
 from util.config import COLLECTION_NAME, DB_STORAGE_PATH, EMBEDDING_MODEL, INFERENCE_BASE_URL, LLM, OR_TOKEN
 from util.types import ChatRequest
 
@@ -47,7 +48,8 @@ db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
 
 
 class Retrival:
-    __device = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    __device = str(torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"))
 
     def __init__(self, client):
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -117,6 +119,7 @@ class Retrival:
             self.__device)).last_hidden_state[:, 0, :].detach().to(torch.float32).cpu().numpy().flatten()
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
 
+
 client = OpenAI(base_url=INFERENCE_BASE_URL, api_key=OR_TOKEN)
 retrival = Retrival(client)
 
@@ -124,26 +127,18 @@ retrival = Retrival(client)
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res, language = await retrival.selfQuery(last_message, 15)
-    print("[SQ Result] :", sq_res)
-    return
+    sq_res, language = await retrival.selfQuery(last_message, 5)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
-        context_list.append(
-            f"{sq_res['metadatas'][0][i]['articleBn'] if language == 'bn' else doc}\n\n\
-                ## article={sq_res['metadatas'][0][i]['articleNoBn'] if language == 'bn' else sq_res['metadatas'][0][i]['articleNoEn']}\
-                ## topic={sq_res['metadatas'][0][i]['topicBn'] if language == 'bn' else sq_res['metadatas'][0][i]['topicEn']}")
-    sq_context_text = "\n\n-----\n\n".join(context_list)
+        context_str = generateContextString(doc, sq_res['metadatas'][0][i], language)
+        context_list.append(context_str)
+    sq_context_text = "\n\n---\n\n".join(context_list)
+
     if sq_context_text:
-        print("[Context] :", [sq_res['metadatas'][0][i]['articleNoEn']
-              for i in range(len(sq_res['metadatas'][0]))])
+        print("[Context] :", sq_context_text)
+    return sq_context_text
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
-    # messages = [
-    #     {"role": "system", "content": SYSTEM_MSG},
-    #     *[m.model_dump(exclude={'id'}) for m in request.messages[:-1]],
-    #     {"role": "user", "content": t.messages[0].content},
-    # ]
     messages = generateMessages(
         SYSTEM_MSG,
         t.messages[0].content,
