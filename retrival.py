@@ -10,8 +10,8 @@ from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from openai import OpenAI
 
-from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, self_query_prompt, metadata_field_info, chat_prompt
-from util.config import DB_STORAGE_PATH, EMBEDDING_MODEL, LLM, OR_TOKEN
+from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, generateMessages, self_query_prompt, metadata_field_info, chat_prompt
+from util.config import COLLECTION_NAME, DB_STORAGE_PATH, EMBEDDING_MODEL, INFERENCE_BASE_URL, LLM, OR_TOKEN
 from util.types import ChatRequest
 
 load_dotenv()
@@ -52,7 +52,7 @@ db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
 class Retrival:
     __device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def __init__(self, EMBEDDING_MODEL, client, collection_name: str, attribute_info: dict = None):
+    def __init__(self, client, attribute_info: dict = None):
         self.tokenizer = AutoTokenizer.from_pretrained(
             EMBEDDING_MODEL, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
@@ -63,7 +63,7 @@ class Retrival:
 
         self.mcp_tools = None
         self.collection = db_client.get_or_create_collection(
-            name=collection_name,
+            name=COLLECTION_NAME,
             embedding_function=SentenceTransformerEmbeddingFunction(
                 model_name=EMBEDDING_MODEL,
                 trust_remote_code=True,
@@ -71,30 +71,24 @@ class Retrival:
             )
         )
 
-    def generateQueryMsg(self, temp):
-        return [
-            {"role": "system", "content": SQ_SYSTEM_MSG},
-            {"role": "user", "content": temp.messages[0].content},
-        ]
-
-    def getLLMResponse(self, q: str, llm_model: str = LLM):
-        pipe = (self_query_prompt | self.generateQueryMsg)
-        messages = pipe.invoke(
+    def getLLMResponse(self, q: str):
+        t = self_query_prompt.invoke(
             {'question': q, 'attribute_info': json.dumps(self.attribute_info)})
+        messages = generateMessages(SQ_SYSTEM_MSG, t.messages[0].content)
         return self.client.chat.completions.create(
-            model=llm_model,
+            model=LLM,
             messages=messages,
             temperature=0,
             stream=False,
             # tools=self.mcp_tools
         )
 
-    async def generateQueryAndFilters(self, question: str, llm_model: str = LLM):
+    async def generateQueryAndFilters(self, question: str):
         # if self.mcp_tools is None:
         #     self.mcp_tools = await get_mcp_tools()
         # print("[MCP TOOLS]", self.mcp_tools)
 
-        llm_res = self.getLLMResponse(question, llm_model=llm_model)
+        llm_res = self.getLLMResponse(question)
         # if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
         #     tool_call = llm_res.choices[0].message.tool_calls[0]
         #     print("[Tool call]", tool_call)
@@ -131,15 +125,14 @@ class Retrival:
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
 
 
-client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=OR_TOKEN)
-retrival = Retrival(EMBEDDING_MODEL, client,
-                    collection_name="bd-constitution", attribute_info=metadata_field_info)
+client = OpenAI(base_url=INFERENCE_BASE_URL, api_key=OR_TOKEN)
+retrival = Retrival(client, attribute_info=metadata_field_info)
 
 
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res, language = await retrival.selfQuery(last_message, 10)
+    sq_res, language = await retrival.selfQuery(last_message, 15)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_list.append(
@@ -152,11 +145,16 @@ async def getAnswer(request: ChatRequest):
               for i in range(len(sq_res['metadatas'][0]))])
     t = chat_prompt.invoke(
         {'question': last_message, 'context': sq_context_text})
-    messages = [
-        {"role": "system", "content": SYSTEM_MSG},
-        *[m.model_dump(exclude={'id'}) for m in request.messages[:-1]],
-        {"role": "user", "content": t.messages[0].content},
-    ]
+    # messages = [
+    #     {"role": "system", "content": SYSTEM_MSG},
+    #     *[m.model_dump(exclude={'id'}) for m in request.messages[:-1]],
+    #     {"role": "user", "content": t.messages[0].content},
+    # ]
+    messages = generateMessages(
+        SYSTEM_MSG,
+        t.messages[0].content,
+        history=[m.model_dump(exclude={'id'}) for m in request.messages[:-1]]
+    )
     stream = client.chat.completions.create(
         model=LLM,
         messages=messages,

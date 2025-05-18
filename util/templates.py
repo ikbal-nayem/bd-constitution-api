@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate
 
 SQ_SYSTEM_MSG = r"""
-You are the only expert of ChromaDB vector database, with complete knowledge of how to structure queries and filters for the vector database.
+You are a expert of vector database, with complete knowledge of how to structure queries and filters for the vector database.
 
 Your task is to transform the user's natural language query into a structured format as defined in the schema below.
 
@@ -27,10 +27,6 @@ Key Rules:
     - `val` is the value to compare
 - A logical operation follows: `op(statement1, statement2, ...)`
     - `op` can be one of: and, or
-
-# Important Translation Instruction:
-# - If the user message is in **Bangla** language, pass the **raw Bangla text directly to the translator tool**. Do NOT translate or interpret it yourself before using the translator tool.
-# - If the user message is in **English**, use it directly.
 
 Important Translation Instruction:
 - If the user message is in **Bangla** language, then translate it into english and then set to the query and filter as usual.
@@ -246,6 +242,14 @@ metadata_field_info = {
         },
     }
 }
+
+
+def generateMessages(system_msg: str, user_msg: str, history: list = None) -> list:
+    return [
+        {"role": "system", "content": system_msg},
+        *(history if history else []),
+        {"role": "user", "content": user_msg}
+    ]
 
 
 self_query_prompt = ChatPromptTemplate.from_template(SQ_PROMPT_TEMPLATE)
