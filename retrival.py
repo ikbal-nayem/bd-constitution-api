@@ -5,16 +5,13 @@ import os
 import json
 # from mcp import ClientSession, StdioServerParameters
 # from mcp.client.stdio import stdio_client
-from dotenv import load_dotenv
 from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from openai import OpenAI
 
-from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, generateMessages, self_query_prompt, metadata_field_info, chat_prompt
+from util.templates import SQ_SYSTEM_MSG, SYSTEM_MSG, generateMessages, chat_prompt
 from util.config import COLLECTION_NAME, DB_STORAGE_PATH, EMBEDDING_MODEL, INFERENCE_BASE_URL, LLM, OR_TOKEN
 from util.types import ChatRequest
-
-load_dotenv()
 
 db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
 # server_params = StdioServerParameters(
@@ -50,16 +47,16 @@ db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
 
 
 class Retrival:
-    __device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    __device = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-    def __init__(self, client, attribute_info: dict = None):
+    def __init__(self, client):
         self.tokenizer = AutoTokenizer.from_pretrained(
             EMBEDDING_MODEL, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
             EMBEDDING_MODEL, trust_remote_code=True)
         self.model.to(self.__device)
         self.client = client
-        self.attribute_info = attribute_info
+        # self.attribute_info = attribute_info
 
         self.mcp_tools = None
         self.collection = db_client.get_or_create_collection(
@@ -71,24 +68,19 @@ class Retrival:
             )
         )
 
-    def getLLMResponse(self, q: str):
-        t = self_query_prompt.invoke(
-            {'question': q, 'attribute_info': json.dumps(self.attribute_info)})
-        messages = generateMessages(SQ_SYSTEM_MSG, t.messages[0].content)
-        return self.client.chat.completions.create(
+    async def generateQueryAndFilters(self, question: str):
+        # if self.mcp_tools is None:
+        #     self.mcp_tools = await get_mcp_tools()
+        # print("[MCP TOOLS]", self.mcp_tools)
+
+        messages = generateMessages(SQ_SYSTEM_MSG, question)
+        llm_res = self.client.chat.completions.create(
             model=LLM,
             messages=messages,
             temperature=0,
             stream=False,
             # tools=self.mcp_tools
         )
-
-    async def generateQueryAndFilters(self, question: str):
-        # if self.mcp_tools is None:
-        #     self.mcp_tools = await get_mcp_tools()
-        # print("[MCP TOOLS]", self.mcp_tools)
-
-        llm_res = self.getLLMResponse(question)
         # if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
         #     tool_call = llm_res.choices[0].message.tool_calls[0]
         #     print("[Tool call]", tool_call)
@@ -120,19 +112,21 @@ class Retrival:
         return {'documents': [[]]}, q_language
 
     def query(self, query: str, n_results: int):
+        # TODO: Try to pass query text to collection.query
         query_vector = self.model(**self.tokenizer(text=query, return_tensors="pt").to(
             self.__device)).last_hidden_state[:, 0, :].detach().to(torch.float32).cpu().numpy().flatten()
         return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
 
-
 client = OpenAI(base_url=INFERENCE_BASE_URL, api_key=OR_TOKEN)
-retrival = Retrival(client, attribute_info=metadata_field_info)
+retrival = Retrival(client)
 
 
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
     sq_res, language = await retrival.selfQuery(last_message, 15)
+    print("[SQ Result] :", sq_res)
+    return
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_list.append(
