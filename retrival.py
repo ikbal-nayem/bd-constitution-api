@@ -134,7 +134,7 @@ retrival = Retrival(client)
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res, language = await retrival.selfQuery(last_message, 15)
+    sq_res, language = await retrival.selfQuery(last_message, 20)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_str = generateContextString(
