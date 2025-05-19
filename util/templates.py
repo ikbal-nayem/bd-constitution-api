@@ -46,7 +46,7 @@ Expected Output:
 User Question (Bangla, relevant, general law):
 `ডিজিটাল নিরাপত্তা আইন সম্পর্কে বিস্তারিত বলুন।`
 Expected Output:
-`{"query": "Digital Security Act details", "language": "bn", "document_contains": []}`
+`{"query": "Digital Security Act", "language": "bn", "document_contains": []}`
 
 User Question (English, irrelevant):
 `Can you tell me a joke?`
