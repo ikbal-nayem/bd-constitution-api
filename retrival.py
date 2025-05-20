@@ -5,7 +5,6 @@ import os
 import json
 # from mcp import ClientSession, StdioServerParameters
 # from mcp.client.stdio import stdio_client
-from transformers import AutoModel, AutoTokenizer
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from openai import OpenAI
 
@@ -52,14 +51,7 @@ class Retrival:
         "cuda" if torch.cuda.is_available() else "cpu"))
 
     def __init__(self, client):
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            EMBEDDING_MODEL, trust_remote_code=True)
-        self.model = AutoModel.from_pretrained(
-            EMBEDDING_MODEL, trust_remote_code=True)
-        self.model.to(self.__device)
         self.client = client
-        # self.attribute_info = attribute_info
-
         self.mcp_tools = None
         self.collection = db_client.get_or_create_collection(
             name=COLLECTION_NAME,
@@ -99,32 +91,31 @@ class Retrival:
             if json_match:
                 json_string = json_match.group(0)
                 return json.loads(json_string)
-            return {'query': question, 'filter': ''}
+            return {'query': question, 'language': 'en'}
         except:
             print(f'[Error] LLM response JSON: {json_str}')
-            return {'query': question, 'filter': ''}
+            return {'query': question, 'language': 'en'}
 
     async def selfQuery(self, query: str, n_results=5):
         query_json = await self.generateQueryAndFilters(query)
         q_language = query_json.get("language")
         print("[Query JSON]", query_json, "\n")
         if query_json.get("query") or query_json.get("document_contains"):
-            q_res = self.query(query_json.get("query"), query_json.get("document_contains"), n_results=n_results)
+            q_res = self.query(query_json.get("query"), query_json.get(
+                "document_contains"), n_results=n_results)
             return q_res, q_language
         return {'documents': [[]]}, q_language
 
-    def query(self, query: str, document_contains: dict, n_results: int):
-        # TODO: Try to pass query text to collection.query
-        query_vector = self.model(**self.tokenizer(text=query, return_tensors="pt").to(
-            self.__device)).last_hidden_state[:, 0, :].detach().to(torch.float32).cpu().numpy().flatten()
+    def query(self, query: list[str], document_contains: dict, n_results: int):
         if len(document_contains):
             if len(document_contains) > 1:
-                document_filter = {"$or": [{"$contains": a} for a in document_contains]}
+                document_filter = {"$or": [{"$contains": a}
+                                           for a in document_contains]}
             else:
                 document_filter = {"$contains": document_contains[0]}
-            return self.collection.query(query_embeddings=query_vector.tolist(), where_document=document_filter, n_results=n_results)
+            return self.collection.query(query_texts=query, where_document=document_filter, n_results=n_results)
         else:
-            return self.collection.query(query_embeddings=query_vector.tolist(), n_results=n_results)
+            return self.collection.query(query_texts=query, n_results=n_results)
 
 
 client = OpenAI(base_url=INFERENCE_BASE_URL, api_key=OR_TOKEN)
@@ -134,7 +125,7 @@ retrival = Retrival(client)
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res, language = await retrival.selfQuery(last_message, 20)
+    sq_res, language = await retrival.selfQuery(last_message, 5)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_str = generateContextString(
@@ -142,8 +133,9 @@ async def getAnswer(request: ChatRequest):
         context_list.append(context_str)
     sq_context_text = "\n\n---\n\n".join(context_list)
 
-    # if sq_context_text:
-    #     print("[Context] :", sq_context_text)
+    if sq_context_text:
+        print("[Context] :", sq_context_text)
+    return sq_context_text
     t = chat_prompt.invoke(
         {'question': last_message, 'contexts': sq_context_text})
     messages = generateMessages(
