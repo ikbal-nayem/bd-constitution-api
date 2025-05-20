@@ -1,8 +1,8 @@
 import chromadb
 import torch
 import re
-import os
 import json
+import asyncio
 # from mcp import ClientSession, StdioServerParameters
 # from mcp.client.stdio import stdio_client
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -68,7 +68,7 @@ class Retrival:
         # print("[MCP TOOLS]", self.mcp_tools)
 
         messages = generateMessages(SQ_SYSTEM_MSG, question)
-        llm_res = self.client.chat.completions.create(
+        llm_res = await asyncio.to_thread(self.client.chat.completions.create,
             model=LLM,
             messages=messages,
             temperature=0,
@@ -143,7 +143,7 @@ async def getAnswer(request: ChatRequest):
         t.messages[0].content,
         history=[m.model_dump(exclude={'id'}) for m in request.messages[:-1]]
     )
-    stream = client.chat.completions.create(
+    stream = await asyncio.to_thread(client.chat.completions.create,
         model=LLM,
         messages=messages,
         temperature=request.temperature or 0.5,
