@@ -125,7 +125,7 @@ retrival = Retrival(client)
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res, language = await retrival.selfQuery(last_message, 5)
+    sq_res, language = await retrival.selfQuery(last_message, 20)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_str = generateContextString(
@@ -133,9 +133,9 @@ async def getAnswer(request: ChatRequest):
         context_list.append(context_str)
     sq_context_text = "\n\n---\n\n".join(context_list)
 
-    if sq_context_text:
-        print("[Context] :", sq_context_text)
-    return sq_context_text
+    # if sq_context_text:
+    #     print("[Context] :", sq_context_text)
+    # return sq_context_text
     t = chat_prompt.invoke(
         {'question': last_message, 'contexts': sq_context_text})
     messages = generateMessages(
