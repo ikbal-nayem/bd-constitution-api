@@ -129,9 +129,9 @@ async def getAnswer(request: ChatRequest):
         context_list.append(context_str)
     sq_context_text = "\n\n---\n\n".join(context_list)
 
-    if sq_context_text:
-        print("[Context] :", sq_context_text)
-    return sq_context_text
+    # if sq_context_text:
+    #     print("[Context] :", sq_context_text)
+    # return sq_context_text
     t = chat_prompt.invoke(
         {'question': last_message, 'contexts': sq_context_text})
     messages = generateMessages(
