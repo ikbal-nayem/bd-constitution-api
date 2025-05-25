@@ -69,12 +69,12 @@ class Retrival:
 
         messages = generateMessages(SQ_SYSTEM_MSG, question)
         llm_res = await asyncio.to_thread(self.client.chat.completions.create,
-            model=LLM,
-            messages=messages,
-            temperature=0,
-            stream=False,
-            # tools=self.mcp_tools
-        )
+                                          model=LLM,
+                                          messages=messages,
+                                          temperature=0,
+                                          stream=False,
+                                          # tools=self.mcp_tools
+                                          )
         # if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
         #     tool_call = llm_res.choices[0].message.tool_calls[0]
         #     print("[Tool call]", tool_call)
@@ -100,20 +100,16 @@ class Retrival:
         query_json = await self.generateQueryAndFilters(query)
         q_language = query_json.get("language")
         print("[Query JSON]", query_json, "\n")
-        if query_json.get("query") or query_json.get("document_contains"):
+        if query_json.get("query") or query_json.get("sections"):
             q_res = self.query(query_json.get("query"), query_json.get(
-                "document_contains"), n_results=n_results)
+                "sections"), n_results=n_results)
             return q_res, q_language
         return {'documents': [[]]}, q_language
 
-    def query(self, query: list[str], document_contains: dict, n_results: int):
-        if len(document_contains):
-            if len(document_contains) > 1:
-                document_filter = {"$or": [{"$contains": a}
-                                           for a in document_contains]}
-            else:
-                document_filter = {"$contains": document_contains[0]}
-            return self.collection.query(query_texts=query, where_document=document_filter, n_results=n_results)
+    def query(self, query: list[str], sections: dict, n_results: int):
+        if len(sections):
+            where = {"section_no_en": {"$in": sections}}
+            return self.collection.query(query_texts=query, where=where, n_results=n_results)
         else:
             return self.collection.query(query_texts=query, n_results=n_results)
 
@@ -133,9 +129,9 @@ async def getAnswer(request: ChatRequest):
         context_list.append(context_str)
     sq_context_text = "\n\n---\n\n".join(context_list)
 
-    # if sq_context_text:
-    #     print("[Context] :", sq_context_text)
-    # return sq_context_text
+    if sq_context_text:
+        print("[Context] :", sq_context_text)
+    return sq_context_text
     t = chat_prompt.invoke(
         {'question': last_message, 'contexts': sq_context_text})
     messages = generateMessages(
@@ -144,11 +140,11 @@ async def getAnswer(request: ChatRequest):
         history=[m.model_dump(exclude={'id'}) for m in request.messages[:-1]]
     )
     stream = await asyncio.to_thread(client.chat.completions.create,
-        model=LLM,
-        messages=messages,
-        temperature=request.temperature or 0.5,
-        stream=request.stream or False
-    )
+                                     model=LLM,
+                                     messages=messages,
+                                     temperature=request.temperature or 0.5,
+                                     stream=request.stream or False
+                                     )
     print("[ANSWER] :", stream.choices[0].message.content)
     return stream.choices[0].message.content
     # for chunk in stream:

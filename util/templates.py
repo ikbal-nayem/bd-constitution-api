@@ -31,7 +31,7 @@ Return a JSON object with three keys:
 
 - `"query"`: An array of English query strings optimized for vector search (or an empty array `[]` if the question is irrelevant)  
 - `"language"`: `"bn"` or `"en"` depending on original input  
-- `"document_contains"`: An array of identified section/article references (e.g., `["9", "102"]`) or an empty array if none are found.
+- `"sections"`: An array of identified section/article references (e.g., `["9", "102"]`) or an empty array if none are found.
 
 Do not include any explanations, apologies, or conversational text outside of the JSON object. Your entire response should be only the JSON object.
 
@@ -41,37 +41,37 @@ Examples:
 User Question (Bangla, relevant, mentions section):
 `তথ্য অধিকার আইনের ৯ ধারায় কি বলা হয়েছে?`
 Expected Output:
-`{"query": ["Right to Information Act", "section 9"], "language": "bn", "document_contains": ["9"]}`
+`{"query": ["Right to Information Act", "section 9"], "language": "bn", "sections": ["9"]}`
 
 User Question (English, relevant):
 `What are the powers of the Prime Minister according to the constitution?`
 Expected Output:
-`{"query": ["powers of Prime Minister", "Prime Minister constitution"], "language": "en", "document_contains": []}`
+`{"query": ["powers of Prime Minister", "Prime Minister constitution"], "language": "en", "sections": []}`
 
 User Question (Bangla, relevant, general law):
 `ডিজিটাল নিরাপত্তা আইন সম্পর্কে বিস্তারিত বলুন।`
 Expected Output:
-`{"query": ["Digital Security Act", "provisions of Digital Security Act"], "language": "bn", "document_contains": []}`
+`{"query": ["Digital Security Act", "provisions of Digital Security Act"], "language": "bn", "sections": []}`
 
 User Question (Bangla, irrelevant):
 `আজকের আবহাওয়া কেমন?`
 Expected Output:
-`{"query": [], "language": "bn", "document_contains": []}`
+`{"query": [], "language": "bn", "sections": []}`
 
 User Question (English, relevant, specific law without section):
 `What is the provision for bail in the Narcotics Control Act?`
 Expected Output:
-`{"query": ["provision for bail Narcotics Control Act", "bail laws under Narcotics Control Act", "Narcotics Control Act bail provision"], "language": "en", "document_contains": []}`
+`{"query": ["provision for bail Narcotics Control Act", "bail laws under Narcotics Control Act", "Narcotics Control Act bail provision"], "language": "en", "sections": []}`
 
 User Question (Bangla, relevant, specific section of constitution):
 `সংবিধানের ৭৯ এবং ৭খ অনুচ্ছেদে কি আছে?`
 Expected Output:
-`{"query": ["79 Constitution","7 Constitution"], "language": "bn", "document_contains": ["79", "7"]}`
+`{"query": ["79 Constitution","7 Constitution"], "language": "bn", "sections": ["79", "7"]}`
 
 User Question (English, general greeting):
 `Hello`
 Expected Output:
-`{"query": [], "language": "en", "document_contains": []}`
+`{"query": [], "language": "en", "sections": []}`
 """
 
 
