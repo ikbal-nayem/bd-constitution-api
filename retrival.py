@@ -108,7 +108,7 @@ class Retrival:
 
     def query(self, query: list[str], sections: dict, n_results: int):
         if len(sections):
-            where = {"section_no_en": {"$in": sections}}
+            where = {"section_no_en": {"$eq": sections[0]}}
             return self.collection.query(query_texts=query, where=where, n_results=n_results)
         else:
             return self.collection.query(query_texts=query, n_results=n_results)
@@ -121,7 +121,7 @@ retrival = Retrival(client)
 async def getAnswer(request: ChatRequest):
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
-    sq_res, language = await retrival.selfQuery(last_message, 20)
+    sq_res, language = await retrival.selfQuery(last_message, 25)
     context_list = []
     for i, doc in enumerate(sq_res['documents'][0]):
         context_str = generateContextString(
