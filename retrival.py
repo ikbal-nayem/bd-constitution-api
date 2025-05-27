@@ -155,7 +155,7 @@ async def getAnswer(request: ChatRequest):
 
                 if content:
                     print(content, end='', flush=True)
-                    yield content
+                    yield f"data: {content}\n\n"
                 if finish_reason == "stop":
                     print("[INFO] LLM stream finished.")
                     break
@@ -165,4 +165,4 @@ async def getAnswer(request: ChatRequest):
         print(f"[ERROR] Error in get_answer_stream: {e}")
         # import traceback
         # traceback.print_exc() # For detailed error logging during development
-        yield f"Error processing your request: {str(e)}"
+        yield f"Error processing your request: {str(e)}\n\n"
