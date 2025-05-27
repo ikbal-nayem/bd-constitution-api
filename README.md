@@ -25,8 +25,9 @@ short_description: Bangladesh constitution law Agentic RAG implementation API
     "content": "string",
     "id?": "string"
   }[],
-  "max_tokens?": "number",
   "temperature?": "number",
-  "stream?": "boolean"
 }
 ```
+
+*Response*
+`Stream of text`

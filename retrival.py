@@ -108,7 +108,7 @@ class Retrival:
 
     def query(self, query: list[str], sections: dict, n_results: int):
         if len(sections):
-            where = {"section_no_en": {"$eq": sections[0]}}
+            where = {"section_no_en": {"$in": sections}}
             return self.collection.query(query_texts=query, where=where, n_results=n_results)
         else:
             return self.collection.query(query_texts=query, n_results=n_results)
@@ -139,13 +139,30 @@ async def getAnswer(request: ChatRequest):
         t.messages[0].content,
         history=[m.model_dump(exclude={'id'}) for m in request.messages[:-1]]
     )
-    stream = await asyncio.to_thread(client.chat.completions.create,
-                                     model=LLM,
-                                     messages=messages,
-                                     temperature=request.temperature or 0.5,
-                                     stream=request.stream or False
-                                     )
-    print("[ANSWER] :", stream.choices[0].message.content)
-    return stream.choices[0].message.content
-    # for chunk in stream:
-    #     print(chunk.choices[0].delta.content, end="")
+    try:
+        stream_obj = client.chat.completions.create(
+            model=LLM,
+            messages=messages,
+            temperature=request.temperature or 0.5,
+            stream=True
+        )
+        # print("[ANSWER] :", stream.choices[0].message.content)
+        # return stream.choices[0].message.content
+        for chunk in stream_obj:
+            if chunk.choices:
+                content = chunk.choices[0].delta.content
+                finish_reason = chunk.choices[0].finish_reason
+
+                if content:
+                    print(content, end='', flush=True)
+                    yield content
+                if finish_reason == "stop":
+                    print("[INFO] LLM stream finished.")
+                    break
+            else:
+                print("[WARN] Received a chunk with no choices.")
+    except Exception as e:
+        print(f"[ERROR] Error in get_answer_stream: {e}")
+        # import traceback
+        # traceback.print_exc() # For detailed error logging during development
+        yield f"Error processing your request: {str(e)}"
