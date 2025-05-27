@@ -155,8 +155,7 @@ async def getAnswer(request: ChatRequest):
 
                 if content:
                     print(content, end='', flush=True)
-                    data = json.dumps({"type": "token", "value": content})
-                    yield f"data: {data}\n\n"
+                    yield content
                 if finish_reason == "stop":
                     print("[INFO] LLM stream finished.")
                     break
