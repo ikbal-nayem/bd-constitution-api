@@ -9,3 +9,4 @@ langchain_core
 python-dotenv
 openai
 mcp
+einops
