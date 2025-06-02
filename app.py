@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
 
-from retrival import getAnswer
+from responses import getAnswer
 from util.types import ChatRequest
 
 
@@ -15,5 +14,6 @@ def read_root():
 
 @app.post("/chat")
 async def chat_response(request: ChatRequest):
-    # res = await getAnswer(request)
-    return StreamingResponse(getAnswer(request), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "Connection": "keep-alive"})
+    res = await getAnswer(request)
+    return res
+    # return StreamingResponse(getAnswer(request), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "Connection": "keep-alive"})
