@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Editor/IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Dependency management
+pip-wheel-metadata/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.nox/
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Configuration files (if not needed in the image)
+.env
+.flaskenv
+config.ini
+settings.pyc
+
+# Data files (if not needed in the image)
+data/
+uploads/
+
+# Version control
+.git/
+.gitignore
+
+# Docker specific files (if not needed in the image)
+Dockerfile
+docker-compose.yml
+
+README.md
