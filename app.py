@@ -2,6 +2,7 @@ from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
 
 from responses import getAnswer
+from util.db import setFeedback
 from util.types import ChatFeedback, ChatRequest
 
 
@@ -15,11 +16,17 @@ def read_root():
 
 @app.post("/chat/feedback")
 def chat_feedback(request: ChatFeedback):
-    print(f"Feedback received: {request}")
+    print(f"Feedback received: ", request)
+    isSuccess = setFeedback(
+        message_id=request.message_id,
+        feedback=request.feedback,
+        rating=request.rating,
+        suggested_answer=request.suggested_answer
+    )
 
     return Response(
-        content=f"Feedback for message ID {request.message_id} received with rating {request.rating}.",
-        status_code=200
+        content="Feedback recorded successfully." if isSuccess else "Failed to record feedback.",
+        status_code=200 if isSuccess else 500
     )
 
 

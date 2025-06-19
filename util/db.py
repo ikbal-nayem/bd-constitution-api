@@ -20,3 +20,16 @@ def insertHistory(history: ConversationHistory):
         qa_collection.insert_one(history.model_dump())
     except Exception as e:
         print(f"\nError inserting document: {e}")
+
+
+def setFeedback(message_id: str, rating: str, feedback: str, suggested_answer: str = None):
+    try:
+        qa_collection.update_one(
+            {"message_id": message_id},
+            {"$set": {"rating": rating, "feedback": feedback,
+                      "suggested_answer": suggested_answer}}
+        )
+        return True
+    except Exception as e:
+        print(f"\nError updating document: {e}")
+        return False
