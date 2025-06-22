@@ -8,6 +8,5 @@ services:
     env_file:
       - ./.env
     ports:
-      - "8080:7860"
+      - "6789:8080"
     
-    network_mode: host
