@@ -9,3 +9,6 @@ services:
     ports:
       - "6789:8080"
     
+    volumes:
+      - ./vector-db:/home/user/code/vector-db
+    
