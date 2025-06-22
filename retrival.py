@@ -11,7 +11,6 @@ from util.generator import generateMessages
 from util.templates import SQ_SYSTEM_MSG
 from util.config import COLLECTION_NAME, DB_STORAGE_PATH, EMBEDDING_MODEL, LLM
 
-print("DB Path: ", DB_STORAGE_PATH)
 db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
 # server_params = StdioServerParameters(
 #     command="python",

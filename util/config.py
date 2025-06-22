@@ -11,7 +11,7 @@ LLM = os.getenv("LLM")
 DB_USERNAME = os.getenv("DB_USERNAME")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-DB_STORAGE_PATH = "vector-db"
+DB_STORAGE_PATH = os.path.join(os.getcwd(), "vector-db")
 COLLECTION_NAME = "bd_laws"
 
 INFERENCE_BASE_URL = "https://openrouter.ai/api/v1"
