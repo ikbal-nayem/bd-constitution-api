@@ -1,6 +1,7 @@
 services:
   app:
     image: bd-law-api:latest
+    container_name: bg-law-api
     build:
       context: .
       dockerfile: Dockerfile
