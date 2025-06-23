@@ -5,10 +5,10 @@ from pydantic import BaseModel
 class Message(BaseModel):
     role: str
     content: str
-    id: Optional[str] = None
 
 
 class ChatRequest(BaseModel):
+    id: str
     messages: list[Message]
     max_tokens: int = 100
     temperature: float = 0.5
