@@ -10,6 +10,8 @@ services:
     ports:
       - "6789:8080"
     
+    restart: unless-stopped
+    
     # volumes:
     #   - ./vector-db:/home/user/code/vector-db
     
