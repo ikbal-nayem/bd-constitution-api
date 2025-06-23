@@ -9,6 +9,8 @@ connection_string = f"mongodb://{DB_USERNAME}:{urllib.parse.quote(DB_PASSWORD)}@
 
 mongo_client = MongoClient(connection_string)
 
+print("Connected to MongoDB: ", mongo_client)
+
 db = mongo_client["bdLaw"]
 
 qa_collection = db['conversations']
