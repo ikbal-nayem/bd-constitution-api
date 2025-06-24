@@ -31,7 +31,7 @@ async def getAnswer(request: ChatRequest):
     messages = generateMessages(
         SYSTEM_MSG,
         t.messages[0].content,
-        history=request.messages
+        history=[{"content": m.content, "role": m.role} for m in request.messages]
     )
     try:
         stream_obj = client.chat.completions.create(
@@ -69,5 +69,5 @@ async def getAnswer(request: ChatRequest):
             else:
                 print("[WARN] Received a chunk with no choices.")
     except Exception as e:
-        print(f"[ERROR] Error in get_answer_stream: {e}")
+        print(f"[ERROR] Error in answer stream: {e}")
         yield f"Error processing your request: {str(e)}\n\n"
