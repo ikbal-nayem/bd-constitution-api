@@ -82,6 +82,7 @@ class Retrival:
         #     llm_res = self.getLLMResponse(translation_res, llm_model=llm_model)
 
         if not llm_res.choices:
+            print(llm_res)
             raise Exception(f"LLM Error: {llm_res.error.get('message')}")
         json_str = llm_res.choices[0].message.content
         try:
