@@ -33,7 +33,6 @@ async def getAnswer(request: ChatRequest):
         t.messages[0].content,
         history=request.messages
     )
-    print("[Messages] :", messages)
     try:
         stream_obj = client.chat.completions.create(
             model=LLM,
@@ -41,6 +40,7 @@ async def getAnswer(request: ChatRequest):
             temperature=request.temperature or 0.5,
             stream=True
         )
+        print(stream_obj)
         # message = stream_obj.choices[0].message.content
         # print("[ANSWER] :", message)
         # return {"content": message, "id": uuid4()}
