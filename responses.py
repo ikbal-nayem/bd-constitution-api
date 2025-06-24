@@ -33,6 +33,7 @@ async def getAnswer(request: ChatRequest):
         t.messages[0].content,
         history=request.messages
     )
+    print("[Messages] :", messages)
     try:
         stream_obj = client.chat.completions.create(
             model=LLM,
