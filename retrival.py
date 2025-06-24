@@ -73,6 +73,7 @@ class Retrival:
                                           stream=False,
                                           # tools=self.mcp_tools
                                           )
+        print(llm_res)
         # if "tool_calls" in llm_res.choices[0].message and llm_res.choices[0].message.tool_calls:
         #     tool_call = llm_res.choices[0].message.tool_calls[0]
         #     print("[Tool call]", tool_call)
