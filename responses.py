@@ -45,7 +45,6 @@ async def getAnswer(request: ChatRequest):
         # return {"content": message, "id": uuid4()}
         answer = ''
         for chunk in stream_obj:
-            print("[Chunk] :", chunk)
             if chunk.choices:
                 content = chunk.choices[0].delta.content
                 finish_reason = chunk.choices[0].finish_reason
