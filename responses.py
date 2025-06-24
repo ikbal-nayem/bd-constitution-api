@@ -40,12 +40,12 @@ async def getAnswer(request: ChatRequest):
             temperature=request.temperature or 0.5,
             stream=True
         )
-        print(stream_obj)
         # message = stream_obj.choices[0].message.content
         # print("[ANSWER] :", message)
         # return {"content": message, "id": uuid4()}
         answer = ''
         for chunk in stream_obj:
+            print("[Chunk] :", chunk)
             if chunk.choices:
                 content = chunk.choices[0].delta.content
                 finish_reason = chunk.choices[0].finish_reason
