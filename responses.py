@@ -12,6 +12,7 @@ retrival = Retrival(client)
 
 
 async def getAnswer(request: ChatRequest):
+    last_message_id = request.messages[-1].id
     last_message = request.messages[-1].content
     print("[Query] : "+last_message)
     sq_res, language = await retrival.selfQuery(last_message, 25)
@@ -55,7 +56,7 @@ async def getAnswer(request: ChatRequest):
                 if finish_reason == "stop":
                     try:
                         insertHistory(ConversationHistory(
-                            message_id=request.id,
+                            message_id=last_message_id,
                             question=last_message,
                             answer=answer,
                             language=language,
