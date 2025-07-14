@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 from pydantic import BaseModel
+from sympy import Li
 
 
 class Message(BaseModel):
@@ -11,8 +12,8 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     id: str
+    act: Optional[Literal['LAND', 'DEFAULT']]
     messages: list[Message]
-    max_tokens: int = 100
     temperature: float = 0.5
 
 class ChatFeedback(BaseModel):

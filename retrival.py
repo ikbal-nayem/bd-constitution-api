@@ -1,3 +1,4 @@
+from gc import collect
 import chromadb
 import torch
 import re
@@ -9,7 +10,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 
 from util.generator import generateMessages
 from util.templates import SQ_SYSTEM_MSG
-from util.config import COLLECTION_NAME, DB_STORAGE_PATH, EMBEDDING_MODEL, LLM
+from util.config import COLLECTION_NAME, DB_STORAGE_PATH, EMBEDDING_MODEL, LAND_COLLECTION_NAME, LLM
 
 db_client = chromadb.PersistentClient(DB_STORAGE_PATH)
 # server_params = StdioServerParameters(
@@ -53,11 +54,18 @@ class Retrival:
         self.mcp_tools = None
         self.collection = db_client.get_or_create_collection(
             name=COLLECTION_NAME,
-            embedding_function=SentenceTransformerEmbeddingFunction(
-                model_name=EMBEDDING_MODEL,
-                trust_remote_code=True,
-                device=self.__device
-            )
+            embedding_function=self.__embeddingFunction()
+        )
+        self.land_collection = db_client.get_or_create_collection(
+            name=LAND_COLLECTION_NAME,
+            embedding_function=self.__embeddingFunction()
+        )
+
+    def __embeddingFunction(self):
+        return SentenceTransformerEmbeddingFunction(
+            model_name=EMBEDDING_MODEL,
+            trust_remote_code=True,
+            device=self.__device
         )
 
     async def generateQueryAndFilters(self, question: str):
@@ -95,19 +103,20 @@ class Retrival:
             print(f'[Error] LLM response JSON: {json_str}')
             return {'query': question, 'language': 'en'}
 
-    async def selfQuery(self, query: str, n_results=5):
+    async def selfQuery(self, query: str, act:str, n_results=5):
         query_json = await self.generateQueryAndFilters(query)
         q_language = query_json.get("language")
         print("[Query JSON]", query_json, "\n")
         if query_json.get("query") or query_json.get("sections"):
-            q_res = self.query(query_json.get("query"), query_json.get(
+            q_res = self.query(query_json.get("query"), act, query_json.get(
                 "sections"), n_results=n_results)
             return q_res, q_language
         return {'documents': [[]]}, q_language
 
-    def query(self, query: list[str], sections: dict, n_results: int):
+    def query(self, query: list[str], sections: dict, act:str, n_results: int):
+        collection = self.land_collection if act == 'LAND' else self.collection
         if len(sections):
             where = {"section_no_en": {"$in": sections}}
-            return self.collection.query(query_texts=query, where=where, n_results=n_results)
+            return collection.query(query_texts=query, where=where, n_results=n_results)
         else:
-            return self.collection.query(query_texts=query, n_results=n_results)
+            return collection.query(query_texts=query, n_results=n_results)
