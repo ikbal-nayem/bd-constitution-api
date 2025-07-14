@@ -107,9 +107,10 @@ class Retrival:
         query_json = await self.generateQueryAndFilters(query)
         q_language = query_json.get("language")
         print("[Query JSON]", query_json, "\n")
+
         if query_json.get("query") or query_json.get("sections"):
-            q_res = self.query(query_json.get("query"), act, query_json.get(
-                "sections"), n_results=n_results)
+            q_res = self.query(query_json.get("query"), query_json.get(
+                "sections"), act, n_results=n_results)
             return q_res, q_language
         return {'documents': [[]]}, q_language
 
